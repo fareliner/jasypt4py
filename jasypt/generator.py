@@ -1,0 +1,226 @@
+# Make coding more python3-ish
+from __future__ import (absolute_import, division, print_function)
+
+from abc import ABCMeta, abstractmethod
+from array import array
+from Crypto import Random
+
+
+class PBEParameterGenerator(object):
+    __metaclass__ = ABCMeta
+
+    @staticmethod
+    def pad(block_size, s):
+        """
+        Pad a string to the provided block size when using fixed block ciphers.
+
+        :param block_size: int - the cipher block size
+        :param s: str - the string to pad
+        :return: a padded string that can be fed to the cipher
+        """
+        return s + (block_size - len(s) % block_size) * chr(block_size - len(s) % block_size)
+
+    @staticmethod
+    def unpad(s):
+        """
+        Remove padding from the string after decryption when using fixed block ciphers.
+
+        :param s: str - the string to remove padding from
+        :return: the unpadded string
+        """
+        return s[0:-ord(s[-1])]
+
+    @staticmethod
+    def adjust(a, a_off, b):
+        """
+        Adjusts the byte array as per PKCS12 spec
+
+        :param a: byte[] - the target array
+        :param a_off: int - offset to operate on
+        :param b: byte[] - the bitsy array to pick from
+        :return: nothing as operating on array by reference
+        """
+        x = (b[len(b) - 1] & 0xff) + (a[a_off + len(b) - 1] & 0xff) + 1
+
+        a[a_off + len(b) - 1] = x & 0xff
+
+        x = x >> 8
+
+        for i in range(len(b) - 2, -1, -1):
+            x = x + (b[i] & 0xff) + (a[a_off + i] & 0xff)
+            a[a_off + i] = x & 0xff
+            x = x >> 8
+
+    @staticmethod
+    def pkcs12_password_to_bytes(password):
+        """
+        Converts a password string to a PKCS12 v1.0 compliant byte array.
+
+        :param password: byte[] - the password as simple string
+        :return: The unsigned byte array holding the password
+        """
+        pkcs12_pwd = [0x00] * (len(password) + 1) * 2
+
+        for i in range(0, len(password)):
+            digit = ord(password[i])
+            pkcs12_pwd[i * 2] = int(digit >> 8)
+            pkcs12_pwd[i * 2 + 1] = int(digit)
+
+        return array('B', pkcs12_pwd)
+
+
+class PKCS12ParameterGenerator(PBEParameterGenerator):
+    """
+    Equivalent of the Bouncycastle PKCS12ParameterGenerator.
+    """
+    __metaclass__ = ABCMeta
+
+    DEFAULT_KEY_SIZE = 256
+    DEFAULT_IV_SIZE = 128
+
+    KEY_MATERIAL = 1
+    IV_MATERIAL = 2
+    MAC_MATERIAL = 3
+
+    def __init__(self, digest_factory, key_size_bits=DEFAULT_KEY_SIZE, iv_size_bits=DEFAULT_IV_SIZE):
+        """
+
+        :param digest_factory: object - the digest algoritm to use (e.g. SHA256 or MD5)
+        :param key_size_bits: int - key size in bits
+        :param iv_size_bits: int - iv size in bits
+        """
+        super(PKCS12ParameterGenerator, self).__init__()
+        self.digest_factory = digest_factory
+        self.key_size_bits = key_size_bits
+        self.iv_size_bits = iv_size_bits
+
+    def generate_derived_parameters(self, password, salt, iterations=1000):
+        """
+        Generates the key and iv that can be used with the cipher.
+
+        :param password: str - the password used for the key material
+        :param salt: byte[] - random salt
+        :param iterations: int - number if hash iterations for key material
+
+        :return: key and iv that can be used to setup the cipher
+        """
+        key_size = int(self.key_size_bits / 8)
+        iv_size = int(self.iv_size_bits / 8)
+
+        # pkcs12 padded password (unicode byte array with 2 trailing 0x0 bytes)
+        password_bytes = PKCS12ParameterGenerator.pkcs12_password_to_bytes(password)
+
+        d_key = self.generate_derived_key(password_bytes, salt, iterations, self.KEY_MATERIAL, key_size)
+        if iv_size and iv_size > 0:
+            d_iv = self.generate_derived_key(password_bytes, salt, iterations, self.IV_MATERIAL, iv_size)
+        else:
+            d_iv = None
+        return d_key, d_iv
+
+    def generate_derived_key(self, password, salt, iterations, id_byte, key_size):
+        """
+        Generate a derived key as per PKCS12 v1.0 spec
+
+        :param password: byte[] - pkcs12 padded password (unicode byte array with 2 trailing 0x0 bytes)
+        :param salt: byte[] - random salt
+        :param iterations: int - number if hash iterations for key material
+        :param id_byte: int - the material padding
+        :param key_size: int - the key size in bytes (e.g. AES is 256/8 = 32, IV is 128/8 = 16)
+        :return: the sha256 digested pkcs12 key
+        """
+
+        u = int(self.digest_factory.digest_size)
+        v = int(self.digest_factory.block_size)
+
+        d_key = [0x00] * key_size
+
+        # Step 1
+        D = [id_byte] * v
+
+        # Step 2
+        S = []
+        if salt and len(salt) != 0:
+            s_size = v * int((len(salt) + v - 1) / v)
+            S = [0x00] * s_size
+
+            salt_size = len(salt)
+            for i in range(s_size):
+                S[i] = salt[i % salt_size]
+
+        # Step 3
+        P = []
+        if password and len(password) != 0:
+            p_size = v * int((len(password) + v - 1) / v)
+            P = [0x00] * p_size
+
+            password_size = len(password)
+            for i in range(p_size):
+                P[i] = password[i % password_size]
+
+        # Step 4
+        I = array('B', S + P)
+        B = array('B', [0x00] * v)
+
+        # Step 5
+        c = int((key_size + u - 1) / u)
+
+        # Step 6
+        for i in range(1, c + 1):
+            # Step 6 - a
+            digest = self.digest_factory.new()
+            digest.update(array('B', D))
+            digest.update(I)
+            A = array('B', digest.digest())  # bouncycastle now resets the digest, we will create a new digest
+
+            for j in range(1, iterations):
+                A = array('B', self.digest_factory.new(A).digest())
+
+                # Step 6 - b
+            for k in range(0, v):
+                B[k] = A[k % u]
+
+            # Step 6 - c
+            for j in range(0, int(len(I) / v)):
+                self.adjust(I, j * v, B)
+
+            if i == c:
+                for j in range(0, key_size - ((i - 1) * u)):
+                    d_key[(i - 1) * u + j] = A[j]
+            else:
+                for j in range(0, u):
+                    d_key[(i - 1) * u + j] = A[j]
+
+        return array('B', d_key)
+
+
+class SaltGenerator(object):
+    """
+    Base for a salt generator
+    """
+    __metaclass__ = ABCMeta
+
+    DEFAULT_SALT_SIZE_BYTE = 16
+
+    def __init__(self, salt_block_size=DEFAULT_SALT_SIZE_BYTE):
+        self.salt_block_size = salt_block_size
+
+    @abstractmethod
+    def generate_salt(self):
+        pass
+
+
+class RandomSaltGenerator(SaltGenerator):
+    """
+    A basic random salt generator
+    """
+    __metaclass__ = ABCMeta
+
+    def __init__(self, salt_block_size=SaltGenerator.DEFAULT_SALT_SIZE_BYTE, **kwargs):
+        """
+
+        :param salt_block_size: the salt block size in bytes
+        """
+        super(RandomSaltGenerator, self).__init__(salt_block_size)
+
+    def generate_salt(self):
+        return array('B', Random.get_random_bytes(self.salt_block_size))

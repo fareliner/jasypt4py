@@ -1,0 +1,23 @@
+# force all files to LF endings
+*.yml           text eol=lf
+*.md            text eol=lf
+*.sh            text eol=lf
+*.xml           text eol=lf
+*.j2            text eol=lf
+*.py            text eol=lf
+*.cfg           text eol=lf
+*.txt           text eol=lf
+*.in            text eol=lf
+*.sql           text eol=lf
+*.java          text eol=lf
+.gitignore      text eol=lf
+.gitattributes  text eol=lf
+MAINFEST        text eol=lf
+
+# only windoze files get CRLF endings
+*.bat           text eol=crlf
+
+# ignore binary
+*.jar           binary
+*.zip           binary
+*.tar.gz        binary
