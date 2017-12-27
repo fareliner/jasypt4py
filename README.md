@@ -44,7 +44,7 @@ from jasypt4py import StandardPBEStringEncryptor
 
 cryptor = StandardPBEStringEncryptor('PBEWITHSHA256AND256BITAES-CBC')
 
-decrypted_message = cryptor.encrypt('pssst...don\'t tell anyone', 'secret value', 4000)
+cryptor.encrypt('pssst...don\'t tell anyone', 'secret value', 4000)
 ```
 
 #### Decryption
@@ -67,5 +67,5 @@ from jasypt4py import StandardPBEStringEncryptor
 
 cryptor = StandardPBEStringEncryptor('PBEWITHSHA256AND256BITAES-CBC')
 
-decrypted_message = cryptor.decrypt('pssst...don\'t tell anyone', 'xgX5+yRbKhs4zSubkAPkg9gSBkZU6XWt7csceM/3xDY=', 4000)
+cryptor.decrypt('pssst...don\'t tell anyone', 'xgX5+yRbKhs4zSubkAPkg9gSBkZU6XWt7csceM/3xDY=', 4000)
 ```
