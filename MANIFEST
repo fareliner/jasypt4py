@@ -1,4 +1,4 @@
 setup.py
-jasypt\__init__.py
-jasypt\generator.py
-jasypt\encryptor.py
+jasypt4py\__init__.py
+jasypt4py\generator.py
+jasypt4py\encryptor.py

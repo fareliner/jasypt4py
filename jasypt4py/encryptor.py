@@ -7,7 +7,7 @@ from base64 import b64encode, b64decode
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
 
-from jasypt.generator import PKCS12ParameterGenerator, RandomSaltGenerator
+from jasypt4py.generator import PKCS12ParameterGenerator, RandomSaltGenerator
 
 
 class StandardPBEStringEncryptor(object):

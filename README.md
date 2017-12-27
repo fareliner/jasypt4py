@@ -40,7 +40,7 @@ $JASYPT_HOME/bin/encrypt.sh providerClassName = "org.bouncycastle.jce.provider.B
 is equivalent to:
 
 ```python
-from jasypt import StandardPBEStringEncryptor
+from jasypt4py import StandardPBEStringEncryptor
 
 cryptor = StandardPBEStringEncryptor('PBEWITHSHA256AND256BITAES-CBC')
 
@@ -63,7 +63,7 @@ $JASYPT_HOME/bin/decrypt.sh providerClassName = "org.bouncycastle.jce.provider.B
 is equivalent to:
 
 ```python
-from jasypt import StandardPBEStringEncryptor
+from jasypt4py import StandardPBEStringEncryptor
 
 cryptor = StandardPBEStringEncryptor('PBEWITHSHA256AND256BITAES-CBC')
 

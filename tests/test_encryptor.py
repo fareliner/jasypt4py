@@ -1,6 +1,6 @@
 import unittest
 
-from jasypt.encryptor import StandardPBEStringEncryptor
+from jasypt4py.encryptor import StandardPBEStringEncryptor
 
 
 class TestStandardPBEStringEncryptor(unittest.TestCase):
