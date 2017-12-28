@@ -22,6 +22,14 @@ This project uses the standard python setup mechanism. To build a distributable 
 python setup.py sdist --formats=gztar bdist_wheel
 ```
 
+Optionally sign the artifacts:
+
+```sh
+for f in dist/*.{gz,whl}; do 
+  gpg --detach-sign -a $f
+done
+```
+
 Uploading to pypi only works with a Cpython interpreter and also requires twine. Also make sure you have a valid `~/.pypirc` configuration file. This example should work:
 
 ```ini
