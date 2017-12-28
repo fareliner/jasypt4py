@@ -4,7 +4,6 @@ from jasypt4py.encryptor import StandardPBEStringEncryptor
 
 
 class TestStandardPBEStringEncryptor(unittest.TestCase):
-
     def test_custom_salt_size(self):
         jasypt = StandardPBEStringEncryptor(algorithm='PBEWITHSHA256AND256BITAES-CBC', salt_block_size=32)
 
@@ -16,13 +15,13 @@ class TestStandardPBEStringEncryptor(unittest.TestCase):
         with self.assertRaises(NotImplementedError) as context:
             StandardPBEStringEncryptor(algorithm=None, salt_generator=None)
 
-        self.assertTrue('Salt generator None is not implemented' in context.exception)
+        self.assertEqual('Salt generator None is not implemented', str(context.exception))
 
     def test_invalid_algorithm_selected(self):
         with self.assertRaises(NotImplementedError) as context:
             StandardPBEStringEncryptor(algorithm=None)
 
-        self.assertTrue('Algorithm None is not implemented' in context.exception)
+        self.assertEqual('Algorithm None is not implemented', str(context.exception))
 
     def test_encrypt_decrypt_with_custom_iteration(self):
         jasypt = StandardPBEStringEncryptor('PBEWITHSHA256AND256BITAES-CBC')
@@ -32,9 +31,26 @@ class TestStandardPBEStringEncryptor(unittest.TestCase):
         encrypted_message = jasypt.encrypt(pwd, message, 4000)
         decrypted_message = jasypt.decrypt(pwd, encrypted_message, 4000)
 
+        self.assertEqual(message, decrypted_message, 'expect same result from reverse function')
+
+    def test_encrypt_decrypt_with_fixed_salt(self):
+        jasypt = StandardPBEStringEncryptor(algorithm='PBEWITHSHA256AND256BITAES-CBC',
+                                            salt_generator='Fixed',
+                                            salt='0123456789ABCDEF')
+        pwd = 'pssst...don\'t tell anyone'
+        message = 'secret value'
+
+        encrypted_message = jasypt.encrypt(pwd, message, 4000)
+        decrypted_message = jasypt.decrypt(pwd, encrypted_message, 4000)
+
         # print('enc = %s' % encrypted_message)
+
+        self.assertEqual('MDEyMzQ1Njc4OUFCQ0RFRpK/4i3JBHsMTN1Zf2OCZ0o=', encrypted_message,
+                         'expected fixed crypted result')
+
         # print('dec = %s' % decrypted_message)
 
+        # decrypt returns a byte array so need to compare apples with apples
         self.assertEqual(message, decrypted_message, 'expect same result from reverse function')
 
     def test_encrypt_decrypt_large_key(self):

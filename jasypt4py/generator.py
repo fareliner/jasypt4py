@@ -2,33 +2,13 @@
 from __future__ import (absolute_import, division, print_function)
 
 from abc import ABCMeta, abstractmethod
-from array import array
 from Crypto import Random
+
+from jasypt4py.exceptions import ArgumentError
 
 
 class PBEParameterGenerator(object):
     __metaclass__ = ABCMeta
-
-    @staticmethod
-    def pad(block_size, s):
-        """
-        Pad a string to the provided block size when using fixed block ciphers.
-
-        :param block_size: int - the cipher block size
-        :param s: str - the string to pad
-        :return: a padded string that can be fed to the cipher
-        """
-        return s + (block_size - len(s) % block_size) * chr(block_size - len(s) % block_size)
-
-    @staticmethod
-    def unpad(s):
-        """
-        Remove padding from the string after decryption when using fixed block ciphers.
-
-        :param s: str - the string to remove padding from
-        :return: the unpadded string
-        """
-        return s[0:-ord(s[-1])]
 
     @staticmethod
     def adjust(a, a_off, b):
@@ -66,7 +46,7 @@ class PBEParameterGenerator(object):
             pkcs12_pwd[i * 2] = int(digit >> 8)
             pkcs12_pwd[i * 2 + 1] = int(digit)
 
-        return array('B', pkcs12_pwd)
+        return bytearray(pkcs12_pwd)
 
 
 class PKCS12ParameterGenerator(PBEParameterGenerator):
@@ -121,8 +101,8 @@ class PKCS12ParameterGenerator(PBEParameterGenerator):
         """
         Generate a derived key as per PKCS12 v1.0 spec
 
-        :param password: byte[] - pkcs12 padded password (unicode byte array with 2 trailing 0x0 bytes)
-        :param salt: byte[] - random salt
+        :param password: bytearray - pkcs12 padded password (unicode byte array with 2 trailing 0x0 bytes)
+        :param salt: bytearray - random salt
         :param iterations: int - number if hash iterations for key material
         :param id_byte: int - the material padding
         :param key_size: int - the key size in bytes (e.g. AES is 256/8 = 32, IV is 128/8 = 16)
@@ -132,34 +112,40 @@ class PKCS12ParameterGenerator(PBEParameterGenerator):
         u = int(self.digest_factory.digest_size)
         v = int(self.digest_factory.block_size)
 
-        d_key = [0x00] * key_size
+        d_key = bytearray(key_size)
 
         # Step 1
-        D = [id_byte] * v
+        D = bytearray(v)
+        for i in range(0, v):
+            D[i] = id_byte
 
         # Step 2
-        S = []
         if salt and len(salt) != 0:
-            s_size = v * int((len(salt) + v - 1) / v)
-            S = [0x00] * s_size
-
             salt_size = len(salt)
+            s_size = v * int((salt_size + v - 1) / v)
+            S = bytearray(s_size)
+
             for i in range(s_size):
                 S[i] = salt[i % salt_size]
+        else:
+            S = bytearray(0)
 
         # Step 3
-        P = []
         if password and len(password) != 0:
-            p_size = v * int((len(password) + v - 1) / v)
-            P = [0x00] * p_size
-
             password_size = len(password)
+            p_size = v * int((password_size + v - 1) / v)
+
+            P = bytearray(p_size)
+
             for i in range(p_size):
                 P[i] = password[i % password_size]
+        else:
+            P = bytearray(0)
 
         # Step 4
-        I = array('B', S + P)
-        B = array('B', [0x00] * v)
+        I = S + P
+
+        B = bytearray(v)
 
         # Step 5
         c = int((key_size + u - 1) / u)
@@ -168,14 +154,14 @@ class PKCS12ParameterGenerator(PBEParameterGenerator):
         for i in range(1, c + 1):
             # Step 6 - a
             digest = self.digest_factory.new()
-            digest.update(array('B', D))
-            digest.update(I)
-            A = array('B', digest.digest())  # bouncycastle now resets the digest, we will create a new digest
+            digest.update(bytes(D))
+            digest.update(bytes(I))
+            A = digest.digest()  # bouncycastle now resets the digest, we will create a new digest
 
             for j in range(1, iterations):
-                A = array('B', self.digest_factory.new(A).digest())
+                A = self.digest_factory.new(A).digest()
 
-                # Step 6 - b
+            # Step 6 - b
             for k in range(0, v):
                 B[k] = A[k % u]
 
@@ -190,7 +176,8 @@ class PKCS12ParameterGenerator(PBEParameterGenerator):
                 for j in range(0, u):
                     d_key[(i - 1) * u + j] = A[j]
 
-        return array('B', d_key)
+        # we string encode as Crypto functions need strings
+        return bytes(d_key)
 
 
 class SaltGenerator(object):
@@ -223,4 +210,30 @@ class RandomSaltGenerator(SaltGenerator):
         super(RandomSaltGenerator, self).__init__(salt_block_size)
 
     def generate_salt(self):
-        return array('B', Random.get_random_bytes(self.salt_block_size))
+        return bytearray(Random.get_random_bytes(self.salt_block_size))
+
+
+class FixedSaltGenerator(SaltGenerator):
+    """
+    A fixed string salt generator
+    """
+    __metaclass__ = ABCMeta
+
+    def __init__(self, salt_block_size=SaltGenerator.DEFAULT_SALT_SIZE_BYTE, salt=None, **kwargs):
+        """
+
+        :param salt_block_size: the salt block size in bytes
+        """
+        super(FixedSaltGenerator, self).__init__(salt_block_size)
+        if not salt:
+            raise ArgumentError('salt not provided')
+        # ensure supplied type matches
+        if isinstance(salt, str):
+            self.salt = bytearray(salt, 'utf-8')
+        elif isinstance(salt, bytearray):
+            self.salt = salt
+        else:
+            raise TypeError('salt must either be a string or bytearray but not %s' % type(salt))
+
+    def generate_salt(self):
+        return self.salt

@@ -29,7 +29,7 @@ except:
 setup(
     name='jasypt4py',
 
-    version='0.0.2',
+    version='0.0.3',
 
     url='https://github.com/fareliner/jasypt4py',
 
@@ -89,8 +89,9 @@ setup(
 
     # manually define packages
     py_modules=[
-        'jasypt4py.encryptor',
-        'jasypt4py.generator'
+        'jasypt4py.exceptions',
+        'jasypt4py.generator',
+        'jasypt4py.encryptor'
     ]
 
 )
