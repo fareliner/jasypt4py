@@ -40,6 +40,14 @@ class StandardPBEStringEncryptor(object):
             # setup the AES cipher
             self._cipher_factory = AES.new
             self._cipher_mode = AES.MODE_CBC
+        elif algorithm == 'PBEWITHSHA256AND128BITAES-CBC':
+
+            # create sha256 PKCS12 secret generator
+            self.key_generator = PKCS12ParameterGenerator(SHA256, key_size_bits=PKCS12ParameterGenerator.KEY_SIZE_128)
+
+            # setup the AES cipher
+            self._cipher_factory = AES.new
+            self._cipher_mode = AES.MODE_CBC
 
         else:
             raise NotImplementedError('Algorithm %s is not implemented' % algorithm)
