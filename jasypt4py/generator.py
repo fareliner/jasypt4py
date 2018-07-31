@@ -55,14 +55,15 @@ class PKCS12ParameterGenerator(PBEParameterGenerator):
     """
     __metaclass__ = ABCMeta
 
-    DEFAULT_KEY_SIZE = 256
+    KEY_SIZE_256 = 256
+    KEY_SIZE_128 = 128
     DEFAULT_IV_SIZE = 128
 
     KEY_MATERIAL = 1
     IV_MATERIAL = 2
     MAC_MATERIAL = 3
 
-    def __init__(self, digest_factory, key_size_bits=DEFAULT_KEY_SIZE, iv_size_bits=DEFAULT_IV_SIZE):
+    def __init__(self, digest_factory, key_size_bits=KEY_SIZE_256, iv_size_bits=DEFAULT_IV_SIZE):
         """
 
         :param digest_factory: object - the digest algoritm to use (e.g. SHA256 or MD5)
