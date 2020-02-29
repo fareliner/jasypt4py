@@ -43,8 +43,8 @@ class PBEParameterGenerator(object):
 
         for i in range(0, len(password)):
             digit = ord(password[i])
-            pkcs12_pwd[i * 2] = int(digit >> 8)
-            pkcs12_pwd[i * 2 + 1] = int(digit)
+            pkcs12_pwd[i * 2] = digit >> 8
+            pkcs12_pwd[i * 2 + 1] = digit
 
         return bytearray(pkcs12_pwd)
 
@@ -55,14 +55,15 @@ class PKCS12ParameterGenerator(PBEParameterGenerator):
     """
     __metaclass__ = ABCMeta
 
-    DEFAULT_KEY_SIZE = 256
+    KEY_SIZE_256 = 256
+    KEY_SIZE_128 = 128
     DEFAULT_IV_SIZE = 128
 
     KEY_MATERIAL = 1
     IV_MATERIAL = 2
     MAC_MATERIAL = 3
 
-    def __init__(self, digest_factory, key_size_bits=DEFAULT_KEY_SIZE, iv_size_bits=DEFAULT_IV_SIZE):
+    def __init__(self, digest_factory, key_size_bits=KEY_SIZE_256, iv_size_bits=DEFAULT_IV_SIZE):
         """
 
         :param digest_factory: object - the digest algoritm to use (e.g. SHA256 or MD5)
@@ -84,8 +85,8 @@ class PKCS12ParameterGenerator(PBEParameterGenerator):
 
         :return: key and iv that can be used to setup the cipher
         """
-        key_size = int(self.key_size_bits / 8)
-        iv_size = int(self.iv_size_bits / 8)
+        key_size = (self.key_size_bits // 8)
+        iv_size = (self.iv_size_bits // 8)
 
         # pkcs12 padded password (unicode byte array with 2 trailing 0x0 bytes)
         password_bytes = PKCS12ParameterGenerator.pkcs12_password_to_bytes(password)
@@ -122,7 +123,7 @@ class PKCS12ParameterGenerator(PBEParameterGenerator):
         # Step 2
         if salt and len(salt) != 0:
             salt_size = len(salt)
-            s_size = v * int((salt_size + v - 1) / v)
+            s_size = v * ((salt_size + v - 1) // v)
             S = bytearray(s_size)
 
             for i in range(s_size):
@@ -133,7 +134,7 @@ class PKCS12ParameterGenerator(PBEParameterGenerator):
         # Step 3
         if password and len(password) != 0:
             password_size = len(password)
-            p_size = v * int((password_size + v - 1) / v)
+            p_size = v * ((password_size + v - 1) // v)
 
             P = bytearray(p_size)
 
@@ -148,7 +149,7 @@ class PKCS12ParameterGenerator(PBEParameterGenerator):
         B = bytearray(v)
 
         # Step 5
-        c = int((key_size + u - 1) / u)
+        c = ((key_size + u - 1) // u)
 
         # Step 6
         for i in range(1, c + 1):
@@ -166,7 +167,7 @@ class PKCS12ParameterGenerator(PBEParameterGenerator):
                 B[k] = A[k % u]
 
             # Step 6 - c
-            for j in range(0, int(len(I) / v)):
+            for j in range(0, (len(I) // v)):
                 self.adjust(I, j * v, B)
 
             if i == c:

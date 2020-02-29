@@ -18,7 +18,7 @@ pip install -U jasypt4py
 
 ### Limitations
 
-Currently only supports `PBEWITHSHA256AND256BITAES-CBC-BC` from Jasypt/Bouncycastle.
+Currently only supports `PBEWITHSHA256AND256BITAES-CBC-BC` and `PBEWITHSHA256AND128BITAES-CBC-BC` from Jasypt/Bouncycastle.
 
 ### Usage
 
