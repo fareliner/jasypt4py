@@ -61,7 +61,7 @@ class StandardPBEStringEncryptor(object):
         :param s: str - the string to pad
         :return: a padded string that can be fed to the cipher
         """
-        return s + (block_size - len(s) % block_size) * chr(block_size - len(s) % block_size)
+        return bytes(s + (block_size - len(s) % block_size) * chr(block_size - len(s) % block_size), 'utf-8')
 
     @staticmethod
     def unpad(s):
