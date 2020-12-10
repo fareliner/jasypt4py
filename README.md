@@ -4,7 +4,19 @@ A python module that produces Jasypt/Bouncycastle compatible hashes and encrypte
 
 ### Prerequisites
 
-Any python environment that can run `pycrypto`.
+Any python environment with a module that can service `import Crypto`
+
+pycryptodome is recommended: https://github.com/Legrandin/pycryptodome
+
+```sh
+pip install -r requirements
+```
+
+### Test
+
+```sh
+python3 setup.py test
+```
 
 ### Installation
 
