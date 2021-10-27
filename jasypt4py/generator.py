@@ -242,10 +242,10 @@ class FixedSaltGenerator(SaltGenerator):
 
 
 class OpenSSLPBEParametersGenerator():
-    def __init__():
+    def __init__(self):
         pass
 
-    def generate_derived_parameters(password, salt, iterations=1):
+    def generate_derived_parameters(self, password, salt, iterations=1):
         hasher = MD5.new()
         hasher.update(password)
         hasher.update(salt)
