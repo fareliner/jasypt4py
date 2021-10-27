@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division, print_function)
 
 from abc import ABCMeta, abstractmethod
 from Crypto import Random
+from Crypto.Hash import MD5
 
 from jasypt4py.exceptions import ArgumentError
 
@@ -238,3 +239,25 @@ class FixedSaltGenerator(SaltGenerator):
 
     def generate_salt(self):
         return self.salt
+
+
+class OpenSSLPBEParametersGenerator():
+    def __init__(self):
+        pass
+
+    def generate_derived_parameters(self, password, salt, iterations=1):
+        hasher = MD5.new()
+        hasher.update(password)
+        hasher.update(salt)
+        result = hasher.digest()
+        key = result
+
+        hasher = MD5.new()
+        hasher.update(result)
+        hasher.update(password)
+        hasher.update(salt)
+        result = hasher.digest()
+        iv = result
+
+        # key, iv
+        return key, iv
