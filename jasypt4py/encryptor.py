@@ -7,7 +7,7 @@ from base64 import b64encode, b64decode
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
 
-from jasypt4py.generator import PKCS12ParameterGenerator, RandomSaltGenerator, FixedSaltGenerator
+from jasypt4py.generator import PKCS12ParameterGenerator, RandomSaltGenerator, FixedSaltGenerator, OpenSSLPBEParametersGenerator
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
@@ -44,6 +44,15 @@ class StandardPBEStringEncryptor(object):
 
             # create sha256 PKCS12 secret generator
             self.key_generator = PKCS12ParameterGenerator(SHA256, key_size_bits=PKCS12ParameterGenerator.KEY_SIZE_128)
+
+            # setup the AES cipher
+            self._cipher_factory = AES.new
+            self._cipher_mode = AES.MODE_CBC
+
+        elif algorithm == 'PBEWITHMD5AND128BITAES_CBC_OPENSSL':
+
+            # create MD5 generator
+            self.key_generator = OpenSSLPBEParametersGenerator()
 
             # setup the AES cipher
             self._cipher_factory = AES.new
