@@ -29,7 +29,7 @@ except:
 setup(
     name='jasypt4py',
 
-    version='0.0.3',
+    version='0.0.4',
 
     url='https://github.com/fareliner/jasypt4py',
 
@@ -78,7 +78,7 @@ setup(
     keywords='jasypt bouncycastle AES crypto SHA256',
 
     install_requires=[
-        'pycrypto'
+        'pycryptodome'
     ],
 
     # prepare for testing with nose
