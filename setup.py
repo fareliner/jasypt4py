@@ -78,7 +78,6 @@ setup(
     keywords='jasypt bouncycastle AES crypto SHA256',
 
     install_requires=[
-        'pycrypto',
         'pycryptodome'
     ],
 
